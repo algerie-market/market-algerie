@@ -112,14 +112,13 @@
     .auth-tab.active { background:var(--orange); color:white; }
     .ad-detail-img-main { width:100%; height:200px; background:var(--dark4); border-radius:12px; overflow:hidden; display:flex; align-items:center; justify-content:center; font-size:56px; margin-bottom:12px; }
     .ad-detail-img-main img { width:100%; height:100%; object-fit:cover; }
-    .contact-btn { width:100%; padding:13px; background:linear-gradient(135deg,#25D366,#128C7E); color:white; border:none; border-radius:12px; font-family:'Cairo',sans-serif; font-size:14px; font-weight:700; cursor:pointer; margin-top:14px; display:flex; align-items:center; justify-content:center; gap:8px; transition:transform 0.2s; }
-    .contact-btn:hover { transform:scale(1.01); }
+    .contact-btn { width:100%; padding:13px; background:linear-gradient(135deg,#25D366,#128C7E); color:white; border:none; border-radius:12px; font-family:'Cairo',sans-serif; font-size:14px; font-weight:700; cursor:pointer; margin-top:14px; display:flex; align-items:center; justify-content:center; gap:8px; }
     .detail-info { background:var(--dark3); border-radius:12px; padding:14px; margin-bottom:12px; }
     .detail-row { display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:13px; }
     .detail-row:last-child { border-bottom:none; }
     .detail-row .label { color:var(--text-muted); }
     .detail-row .value { font-weight:700; }
-    .user-badge { display:flex; align-items:center; gap:8px; cursor:pointer; }
+    .user-badge { display:flex; align-items:center; gap:8px; }
     .user-avatar { width:32px; height:32px; background:linear-gradient(135deg,var(--orange),var(--gold)); border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; color:white; flex-shrink:0; }
     .user-name { font-size:12px; font-weight:700; max-width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .toast { position:fixed; bottom:20px; right:16px; left:16px; max-width:320px; margin:0 auto; background:var(--dark3); border:1px solid var(--border); border-radius:12px; padding:12px 18px; font-size:13px; font-weight:600; z-index:999; transform:translateY(100px); opacity:0; transition:all 0.3s; text-align:center; }
@@ -132,13 +131,11 @@
     .my-ad-info { flex:1; min-width:0; }
     .my-ad-title { font-size:13px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .my-ad-price { font-size:12px; color:var(--orange); font-weight:700; }
-    .my-ad-actions { display:flex; gap:6px; }
     .btn-delete { padding:6px 12px; background:rgba(255,80,80,0.1); border:1px solid rgba(255,80,80,0.3); color:#fca5a5; border-radius:8px; font-family:'Cairo',sans-serif; font-size:11px; cursor:pointer; }
-    .btn-delete:hover { background:rgba(255,80,80,0.2); }
     footer { border-top:1px solid var(--border); padding:24px 16px; text-align:center; color:var(--text-muted); font-size:12px; }
     .footer-logo { font-size:18px; font-weight:900; color:var(--orange); margin-bottom:6px; }
-    @media(max-width:500px) { .cats-grid{grid-template-columns:repeat(3,1fr)} .form-row{grid-template-columns:1fr} .stats{gap:20px} }
-    @media(max-width:360px) { .cats-grid{grid-template-columns:repeat(2,1fr)} }
+    @media(max-width:500px){.cats-grid{grid-template-columns:repeat(3,1fr)}.form-row{grid-template-columns:1fr}.stats{gap:20px}}
+    @media(max-width:360px){.cats-grid{grid-template-columns:repeat(2,1fr)}}
   </style>
 </head>
 <body>
@@ -333,7 +330,6 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
   import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, doc, deleteDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
   import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-  import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyCyejRGX1nfr8vACwQeLUsa1kIshWwQZj4",
@@ -341,15 +337,14 @@
     projectId: "market-algerie",
     storageBucket: "market-algerie.firebasestorage.app",
     messagingSenderId: "915670005616",
-    appId: "1:915670005616:web:2b1caf265b0b4574cf01b5",
-    measurementId: "G-7ZCJSDLSVK"
+    appId: "1:915670005616:web:2b1caf265b0b4574cf01b5"
   };
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
   const auth = getAuth(app);
-  const storage = getStorage(app);
   const googleProvider = new GoogleAuthProvider();
+  const IMGUR_CLIENT_ID = '546c25a59c58ad7';
 
   let currentUser = null;
   let allAds = [];
@@ -468,11 +463,20 @@
     const btn=document.getElementById('submitBtn');
     btn.disabled=true; btn.textContent='⏳ جاري النشر...';
     try {
+      // رفع الصور عبر Imgur مجاناً
       let imgUrls=[];
       for (const img of selectedImgs) {
-        const imgRef=ref(storage,`ads/${Date.now()}_${img.name}`);
-        const snap=await uploadBytes(imgRef,img);
-        imgUrls.push(await getDownloadURL(snap.ref));
+        try {
+          const fd=new FormData();
+          fd.append('image',img);
+          const res=await fetch('https://api.imgur.com/3/image',{
+            method:'POST',
+            headers:{'Authorization':'Client-ID '+IMGUR_CLIENT_ID},
+            body:fd
+          });
+          const data=await res.json();
+          if(data.success) imgUrls.push(data.data.link);
+        } catch(ie){ console.log('img skip'); }
       }
       await addDoc(collection(db,'ads'),{
         title,cat,type,price:price||'قابل للتفاوض',wilaya,desc,phone,
@@ -486,7 +490,7 @@
       document.getElementById('imgPreviews').innerHTML='';
       selectedImgs=[];
       loadAds();
-    } catch(e) { showToast('حدث خطأ أثناء النشر','error'); console.error(e); }
+    } catch(e){ showToast('حدث خطأ أثناء النشر','error'); console.error(e); }
     btn.disabled=false; btn.textContent='🚀 نشر الإعلان';
   };
 
@@ -496,7 +500,7 @@
       const snap=await getDocs(query(collection(db,'ads'),orderBy('createdAt','desc'),limit(200)));
       allAds=snap.docs.map(d=>({id:d.id,...d.data()}));
       updateCounts(); renderAds(); updateStats();
-    } catch(e) {
+    } catch(e){
       document.getElementById('adsGrid').innerHTML='<div class="empty-state"><div class="icon">⚠️</div><h3>خطأ في التحميل</h3><p>تحقق من اتصالك بالإنترنت</p></div>';
     }
   };
@@ -599,7 +603,7 @@
           <div class="my-ad-price">${ad.price==='قابل للتفاوض'?'قابل للتفاوض':Number(ad.price).toLocaleString()+' دج'}</div>
           <div style="font-size:10px;color:var(--text-muted)">📍 ${ad.wilaya} • 👁️ ${ad.views||0} مشاهدة</div>
         </div>
-        <div class="my-ad-actions"><button class="btn-delete" onclick="deleteMyAd('${ad.id}',this)">حذف</button></div>
+        <div><button class="btn-delete" onclick="deleteMyAd('${ad.id}',this)">حذف</button></div>
       </div>`).join('');
   };
 
@@ -617,4 +621,4 @@
   loadAds();
 </script>
 </body>
-    </html>
+                                                                                   </html>
