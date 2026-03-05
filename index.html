@@ -155,4 +155,691 @@
     .comment-text { font-size:12px; color:var(--text); line-height:1.6; }
     .add-comment-box { margin-top:12px; }
     .comment-input-row { display:flex; gap:8px; margin-top:8px; }
-    .comment-input-row input { flex
+    .comment-input-row input { flex:1; padding:9px 12px; background:var(--dark3); border:1px solid var(--border); border-radius:10px; color:var(--text); font-family:'Cairo',sans-serif; font-size:12px; outline:none; }
+    .comment-input-row input:focus { border-color:var(--orange); }
+    .comment-input-row button { padding:9px 16px; background:var(--orange); border:none; border-radius:10px; color:white; font-family:'Cairo',sans-serif; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; }
+    .no-comments { text-align:center; color:var(--text-muted); font-size:12px; padding:16px; }
+    .comments-loading { text-align:center; color:var(--text-muted); font-size:12px; padding:12px; }
+    .user-badge { display:flex; align-items:center; gap:8px; }
+    .user-avatar { width:32px; height:32px; background:linear-gradient(135deg,var(--orange),var(--gold)); border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; color:white; flex-shrink:0; }
+    .user-name { font-size:12px; font-weight:700; max-width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .toast { position:fixed; bottom:20px; right:16px; left:16px; max-width:320px; margin:0 auto; background:var(--dark3); border:1px solid var(--border); border-radius:12px; padding:12px 18px; font-size:13px; font-weight:600; z-index:999; transform:translateY(100px); opacity:0; transition:all 0.3s; text-align:center; }
+    .toast.show { transform:translateY(0); opacity:1; }
+    .toast.success { border-color:rgba(100,200,100,0.4); color:#6ee7b7; }
+    .toast.error { border-color:rgba(255,80,80,0.4); color:#fca5a5; }
+    .my-ad-item { display:flex; align-items:center; gap:12px; padding:12px; background:var(--dark3); border-radius:12px; margin-bottom:10px; }
+    .my-ad-thumb { width:50px; height:50px; border-radius:8px; background:var(--dark4); display:flex; align-items:center; justify-content:center; font-size:22px; overflow:hidden; flex-shrink:0; }
+    .my-ad-thumb img { width:100%; height:100%; object-fit:cover; }
+    .my-ad-info { flex:1; min-width:0; }
+    .my-ad-title { font-size:13px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .my-ad-price { font-size:12px; color:var(--orange); font-weight:700; }
+    .btn-delete { padding:6px 12px; background:rgba(255,80,80,0.1); border:1px solid rgba(255,80,80,0.3); color:#fca5a5; border-radius:8px; font-family:'Cairo',sans-serif; font-size:11px; cursor:pointer; }
+    .breadcrumb { padding:12px 16px 0; max-width:1000px; margin:0 auto; font-size:12px; color:var(--text-muted); display:flex; align-items:center; gap:6px; }
+    .breadcrumb span { cursor:pointer; transition:color 0.2s; }
+    .breadcrumb span:hover { color:var(--orange); }
+    .breadcrumb .current { color:var(--text); font-weight:600; }
+    footer { border-top:1px solid var(--border); padding:24px 16px; text-align:center; color:var(--text-muted); font-size:12px; }
+    .footer-logo { font-size:18px; font-weight:900; color:var(--orange); margin-bottom:6px; }
+    @media(max-width:500px){.cats-grid{grid-template-columns:repeat(3,1fr)}.form-row{grid-template-columns:1fr}.stats{gap:20px}}
+    @media(max-width:360px){.cats-grid{grid-template-columns:repeat(2,1fr)}}
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo" onclick="goHome()">🐔 سوق<span>الدواجن</span> DZ</div>
+  <div class="nav-actions">
+    <div id="guestButtons" style="display:flex;gap:8px">
+      <button class="btn btn-outline" onclick="openModal('authModal')">دخول</button>
+      <button class="btn btn-primary" onclick="requireAuth()">+ أضف إعلان</button>
+    </div>
+    <div id="userBadge" style="display:none">
+      <div class="user-badge">
+        <div class="user-avatar" id="userInitial">A</div>
+        <div>
+          <div class="user-name" id="userName"></div>
+          <div style="font-size:10px;color:var(--text-muted);cursor:pointer" onclick="openMyAds()">إعلاناتي</div>
+        </div>
+        <button class="btn btn-outline" style="padding:5px 10px;font-size:11px" onclick="logout()">خروج</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- HOME PAGE -->
+<div id="homePage" class="page active">
+  <section class="hero">
+    <div class="hero-badge">🇩🇿 سوق الدواجن الأول في الجزائر</div>
+    <h1>بيع واشترِ الدواجن<br><span class="highlight">مجاناً في كل ولايات الجزائر</span></h1>
+    <p>آلاف الإعلانات اليومية للدواجن والبيض والأعلاف والمعدات في كل ولايات الجزائر</p>
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="ابحث... دجاج بلدي، بيض، فروج، أعلاف، معدات..." oninput="doSearch()" onkeydown="if(event.key==='Enter')doSearch()">
+      <button class="search-btn" onclick="doSearch()">🔍</button>
+    </div>
+  </section>
+  <div class="stats">
+    <div class="stat"><div class="stat-num" id="statAds">...</div><div class="stat-label">إعلان نشط</div></div>
+    <div class="stat"><div class="stat-num" id="statUsers">...</div><div class="stat-label">بائع مسجل</div></div>
+    <div class="stat"><div class="stat-num">58</div><div class="stat-label">ولاية مغطاة</div></div>
+    <div class="stat"><div class="stat-num">مجاني</div><div class="stat-label">100% مجاني</div></div>
+  </div>
+  <section class="categories">
+    <div class="section-title"><h2>🐔 تصفح حسب الفئة</h2><div class="line"></div></div>
+    <p style="text-align:center;color:var(--text-muted);font-size:12px;margin-bottom:20px">اضغط على فئة لعرض الإعلانات المتعلقة بها</p>
+    <div class="cats-grid">
+      <div class="cat-card" onclick="openCategory('دجاج حي','🐓')"><div class="cat-icon">🐓</div><div class="cat-name">دجاج حي</div><div class="cat-count" id="cnt-دجاج حي">0 إعلان</div><div class="cat-arrow">← تصفح</div></div>
+      <div class="cat-card" onclick="openCategory('فروج','🐤')"><div class="cat-icon">🐤</div><div class="cat-name">فروج</div><div class="cat-count" id="cnt-فروج">0 إعلان</div><div class="cat-arrow">← تصفح</div></div>
+      <div class="cat-card" onclick="openCategory('دجاج مذبوح','🍗')"><div class="cat-icon">🍗</div><div class="cat-name">دجاج مذبوح</div><div class="cat-count" id="cnt-دجاج مذبوح">0 إعلان</div><div class="cat-arrow">← تصفح</div></div>
+      <div class="cat-card" onclick="openCategory('ديك رومي','🦃')"><div class="cat-icon">🦃</div><div class="cat-name">ديك رومي</div><div class="cat-count" id="cnt-ديك رومي">0 إعلان</div><div class="cat-arrow">← تصفح</div></div>
+      <div class="cat-card" onclick="openCategory('بط','🦆')"><div class="cat-icon">🦆</div><div class="cat-name">بط</div><div class="cat-count" id="cnt-بط">0 إعلان</div><div class="cat-arrow">← تصفح</div></div>
+      <div class="cat-card" onclick="openCategory('إوز','🪿')"><div class="cat-icon">🪿</div><div class="cat-name">إوز</div><div class="cat-count" id="cnt-إوز">0 إعلان</div><div class="cat-arrow">← تصفح</div></div>
+      <div class="cat-card" onclick="openCategory('حمام','🕊️')"><div class="cat-icon">🕊️</div><div class="cat-name">حمام</div><div class="cat-count" id="cnt-حمام">0 إعلان</div><div class="cat-arrow">← تصفح</div></div>
+      <div class="cat-card" onclick="openCategory('طيور زينة','🦜')"><div class="cat-icon">🦜</div><div class="cat-name">طيور زينة</div><div class="cat-count" id="cnt-طيور زينة">0 إعلان</div><div class="cat-arrow">← تصفح</div></div>
+      <div class="cat-card" onclick="openCategory('بيض','🥚')"><div class="cat-icon">🥚</div><div class="cat-name">بيض</div><div class="cat-count" id="cnt-بيض">0 إعلان</div><div class="cat-arrow">← تصفح</div></div>
+      <div class="cat-card" onclick="openCategory('أعلاف ومركزات','🌾')"><div class="cat-icon">🌾</div><div class="cat-name">أعلاف</div><div class="cat-count" id="cnt-أعلاف ومركزات">0 إعلان</div><div class="cat-arrow">← تصفح</div></div>
+      <div class="cat-card" onclick="openCategory('أدوية وتطعيم','💉')"><div class="cat-icon">💉</div><div class="cat-name">أدوية وتطعيم</div><div class="cat-count" id="cnt-أدوية وتطعيم">0 إعلان</div><div class="cat-arrow">← تصفح</div></div>
+      <div class="cat-card" onclick="openCategory('معدات ومستلزمات','🏗️')"><div class="cat-icon">🏗️</div><div class="cat-name">معدات</div><div class="cat-count" id="cnt-معدات ومستلزمات">0 إعلان</div><div class="cat-arrow">← تصفح</div></div>
+    </div>
+  </section>
+</div>
+
+<!-- CATEGORY PAGE -->
+<div id="categoryPage" class="page">
+  <div class="breadcrumb">
+    <span onclick="goHome()">🏠 الرئيسية</span>
+    <span class="sep" style="color:var(--border)">›</span>
+    <span class="current" id="breadcrumbCat">الفئة</span>
+  </div>
+  <div class="cat-page-header">
+    <button class="back-btn" onclick="goHome()">← رجوع</button>
+    <div class="cat-page-title" id="catPageTitle">الفئة</div>
+  </div>
+  <section class="ads-section">
+    <div class="ads-filters">
+      <button class="filter-btn active" onclick="filterType('all',this)">الكل</button>
+      <button class="filter-btn" onclick="filterType('للبيع',this)">للبيع</button>
+      <button class="filter-btn" onclick="filterType('للإيجار',this)">للإيجار</button>
+      <button class="filter-btn" onclick="filterType('مطلوب',this)">مطلوب</button>
+      <button class="filter-btn" onclick="filterType('مجاني',this)">مجاني</button>
+    </div>
+    <div class="ads-grid" id="adsGrid"></div>
+    <div style="text-align:center;margin-top:24px">
+      <button class="btn btn-outline" id="loadMoreBtn" style="display:none" onclick="loadMore()">تحميل المزيد</button>
+    </div>
+  </section>
+</div>
+
+<!-- SEARCH PAGE -->
+<div id="searchPage" class="page">
+  <div class="cat-page-header">
+    <button class="back-btn" onclick="goHome()">← رجوع</button>
+    <div class="cat-page-title">🔍 نتائج البحث</div>
+  </div>
+  <section class="ads-section">
+    <div class="ads-grid" id="searchGrid"></div>
+  </section>
+</div>
+
+<footer>
+  <div class="footer-logo">🐔 سوق الدواجن DZ</div>
+  <p>© 2025 سوق الدواجن DZ - منصة بيع وشراء الدواجن مجاناً في الجزائر 🇩🇿</p>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<!-- AUTH MODAL -->
+<div class="modal-overlay" id="authModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('authModal')">✕</button>
+    <h2>🐔 مرحباً بك</h2>
+    <div class="auth-tabs">
+      <div class="auth-tab active" onclick="switchAuthTab('login')">تسجيل الدخول</div>
+      <div class="auth-tab" onclick="switchAuthTab('register')">إنشاء حساب</div>
+    </div>
+    <div id="loginForm">
+      <div class="form-group"><label>البريد الإلكتروني</label><input type="email" id="loginEmail" placeholder="example@gmail.com"></div>
+      <div class="form-group"><label>كلمة المرور</label><input type="password" id="loginPass" placeholder="••••••••"></div>
+      <button class="btn btn-primary" style="width:100%;padding:12px" onclick="doLogin()" id="loginBtn">دخول</button>
+      <div style="margin-top:12px">
+        <button onclick="doGoogleLogin()" style="width:100%;padding:11px;background:white;border:1px solid #ddd;border-radius:11px;font-family:'Cairo',sans-serif;font-size:13px;font-weight:700;cursor:pointer;color:#333;display:flex;align-items:center;justify-content:center;gap:8px">
+          <span>🔵</span> الدخول بحساب Google
+        </button>
+      </div>
+    </div>
+    <div id="registerForm" style="display:none">
+      <div class="form-group"><label>الاسم الكامل</label><input type="text" id="regName" placeholder="اسمك الكامل"></div>
+      <div class="form-group"><label>البريد الإلكتروني</label><input type="email" id="regEmail" placeholder="example@gmail.com"></div>
+      <div class="form-group"><label>رقم الهاتف</label><input type="tel" id="regPhone" placeholder="0xxxxxxxxx"></div>
+      <div class="form-group"><label>كلمة المرور</label><input type="password" id="regPass" placeholder="6 أحرف على الأقل"></div>
+      <button class="btn btn-primary" style="width:100%;padding:12px" onclick="doRegister()" id="registerBtn">إنشاء حساب</button>
+    </div>
+  </div>
+</div>
+
+<!-- POST AD MODAL -->
+<div class="modal-overlay" id="postModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('postModal')">✕</button>
+    <h2>🐔 نشر إعلان جديد</h2>
+    <div class="form-group"><label>عنوان الإعلان *</label><input type="text" id="adTitle" placeholder="مثال: دجاج بلدي طازج للبيع - 50 رأس"></div>
+    <div class="form-row">
+      <div class="form-group"><label>الفئة *</label>
+        <select id="adCat">
+          <option value="">اختر فئة</option>
+          <optgroup label="🐔 الدواجن الحية">
+            <option>دجاج حي</option>
+            <option>فروج</option>
+            <option>ديك رومي</option>
+            <option>بط</option>
+            <option>إوز</option>
+            <option>حمام</option>
+            <option>نعام</option>
+            <option>طيور زينة</option>
+            <option>أرانب</option>
+          </optgroup>
+          <optgroup label="🍗 الدواجن المذبوحة">
+            <option>دجاج مذبوح</option>
+            <option>فروج مذبوح</option>
+            <option>ديك رومي مذبوح</option>
+            <option>بط مذبوح</option>
+          </optgroup>
+          <optgroup label="🥚 البيض">
+            <option>بيض</option>
+            <option>بيض بلدي</option>
+            <option>بيض نعام</option>
+            <option>بيض حمام</option>
+          </optgroup>
+          <optgroup label="🌾 الأعلاف والمستلزمات">
+            <option>أعلاف ومركزات</option>
+            <option>أدوية وتطعيم</option>
+            <option>معدات ومستلزمات</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="form-group"><label>نوع الإعلان *</label>
+        <select id="adType">
+          <option value="">اختر النوع</option>
+          <option>للبيع</option><option>للإيجار</option><option>مطلوب</option><option>مجاني</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>السعر (دج)</label><input type="number" id="adPrice" placeholder="السعر بالدينار"></div>
+      <div class="form-group"><label>الولاية *</label>
+        <select id="adWilaya">
+          <option value="">اختر الولاية</option>
+          <option>أدرار</option><option>الشلف</option><option>الأغواط</option><option>أم البواقي</option>
+          <option>باتنة</option><option>بجاية</option><option>بسكرة</option><option>بشار</option>
+          <option>البليدة</option><option>البويرة</option><option>تمنراست</option><option>تبسة</option>
+          <option>تلمسان</option><option>تيارت</option><option>تيزي وزو</option><option>الجزائر العاصمة</option>
+          <option>الجلفة</option><option>جيجل</option><option>سطيف</option><option>سعيدة</option>
+          <option>سكيكدة</option><option>سيدي بلعباس</option><option>عنابة</option><option>قالمة</option>
+          <option>قسنطينة</option><option>المدية</option><option>مستغانم</option><option>المسيلة</option>
+          <option>معسكر</option><option>ورقلة</option><option>وهران</option><option>البيض</option>
+          <option>إليزي</option><option>برج بوعريريج</option><option>بومرداس</option><option>الطارف</option>
+          <option>تندوف</option><option>تيسمسيلت</option><option>الوادي</option><option>خنشلة</option>
+          <option>سوق أهراس</option><option>تيبازة</option><option>ميلة</option><option>عين الدفلى</option>
+          <option>النعامة</option><option>عين تيموشنت</option><option>غرداية</option><option>غليزان</option>
+          <option>تيميمون</option><option>برج باجي مختار</option><option>أولاد جلال</option><option>بني عباس</option>
+          <option>عين صالح</option><option>عين قزام</option><option>تقرت</option><option>جانت</option>
+          <option>المغير</option><option>المنيعة</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label>الوصف *</label><textarea id="adDesc" placeholder="اذكر التفاصيل: الكمية، الوزن، العمر، الحالة الصحية..."></textarea></div>
+    <div class="form-group"><label>رقم الهاتف للتواصل *</label><input type="tel" id="adPhone" placeholder="0xxxxxxxxx"></div>
+    <div class="form-group">
+      <label>صور الإعلان (حتى 5 صور)</label>
+      <div class="img-upload" onclick="document.getElementById('imgInput').click()">
+        <div style="font-size:28px">📷</div>
+        <p>اضغط لإضافة صور</p>
+        <input type="file" id="imgInput" accept="image/*" multiple onchange="previewImgs(event)">
+      </div>
+      <div class="img-previews" id="imgPreviews"></div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;padding:13px;font-size:15px" onclick="submitAd()" id="submitBtn">🚀 نشر الإعلان</button>
+  </div>
+</div>
+
+<!-- AD DETAIL MODAL -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('detailModal')">✕</button>
+    <div id="detailContent"></div>
+  </div>
+</div>
+
+<!-- MY ADS MODAL -->
+<div class="modal-overlay" id="myAdsModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('myAdsModal')">✕</button>
+    <h2>📋 إعلاناتي</h2>
+    <div id="myAdsList"><div class="loading"><div class="spinner"></div></div></div>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, doc, deleteDoc, updateDoc, increment, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCyejRGX1nfr8vACwQeLUsa1kIshWwQZj4",
+    authDomain: "market-algerie.firebaseapp.com",
+    projectId: "market-algerie",
+    storageBucket: "market-algerie.firebasestorage.app",
+    messagingSenderId: "915670005616",
+    appId: "1:915670005616:web:2b1caf265b0b4574cf01b5"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+  const googleProvider = new GoogleAuthProvider();
+  const IMGUR_CLIENT_ID = '546c25a59c58ad7';
+
+  let currentUser = null;
+  let allAds = [];
+  let currentCat = 'all';
+  let currentType = 'all';
+  let selectedImgs = [];
+  let displayCount = 12;
+  let currentRating = 0;
+  const PAGE_SIZE = 12;
+
+  window.goHome = () => { showPage('homePage'); currentType = 'all'; };
+
+  window.openCategory = (cat, icon) => {
+    currentCat = cat; currentType = 'all'; displayCount = PAGE_SIZE;
+    document.getElementById('catPageTitle').textContent = icon + ' ' + cat;
+    document.getElementById('breadcrumbCat').textContent = cat;
+    document.querySelectorAll('.filter-btn').forEach((b,i) => b.classList.toggle('active', i===0));
+    showPage('categoryPage');
+    renderCategoryAds();
+  };
+
+  const showPage = id => {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0,0);
+  };
+
+  window.openModal = id => document.getElementById(id).classList.add('open');
+  window.closeModal = id => document.getElementById(id).classList.remove('open');
+
+  window.showToast = (msg, type='success') => {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.className = 'toast show ' + type;
+    setTimeout(() => t.classList.remove('show'), 3000);
+  };
+
+  window.requireAuth = () => {
+    if (!currentUser) { openModal('authModal'); showToast('سجل دخول أولاً لنشر إعلان','error'); }
+    else openModal('postModal');
+  };
+
+  window.logout = async () => { await signOut(auth); showToast('تم تسجيل الخروج'); };
+
+  window.switchAuthTab = tab => {
+    document.querySelectorAll('.auth-tab').forEach((t,i) => t.classList.toggle('active',(tab==='login'&&i===0)||(tab==='register'&&i===1)));
+    document.getElementById('loginForm').style.display = tab==='login'?'block':'none';
+    document.getElementById('registerForm').style.display = tab==='register'?'block':'none';
+  };
+
+  window.doLogin = async () => {
+    const email = document.getElementById('loginEmail').value.trim();
+    const pass = document.getElementById('loginPass').value;
+    if (!email||!pass) return showToast('أدخل البريد وكلمة المرور','error');
+    const btn = document.getElementById('loginBtn');
+    btn.disabled=true; btn.textContent='جاري الدخول...';
+    try {
+      await signInWithEmailAndPassword(auth,email,pass);
+      closeModal('authModal'); showToast('مرحباً بك! 👋');
+    } catch(e) { showToast('بيانات خاطئة أو الحساب غير موجود','error'); }
+    btn.disabled=false; btn.textContent='دخول';
+  };
+
+  window.doGoogleLogin = async () => {
+    try { await signInWithPopup(auth,googleProvider); closeModal('authModal'); showToast('مرحباً بك! 👋'); }
+    catch(e) { showToast('حدث خطأ في الدخول بـ Google','error'); }
+  };
+
+  window.doRegister = async () => {
+    const name=document.getElementById('regName').value.trim();
+    const email=document.getElementById('regEmail').value.trim();
+    const phone=document.getElementById('regPhone').value.trim();
+    const pass=document.getElementById('regPass').value;
+    if (!name||!email||!phone||!pass) return showToast('أكمل جميع الحقول','error');
+    if (pass.length<6) return showToast('كلمة المرور 6 أحرف على الأقل','error');
+    const btn=document.getElementById('registerBtn');
+    btn.disabled=true; btn.textContent='جاري الإنشاء...';
+    try {
+      const cred=await createUserWithEmailAndPassword(auth,email,pass);
+      await updateProfile(cred.user,{displayName:name});
+      await addDoc(collection(db,'users'),{uid:cred.user.uid,name,email,phone,createdAt:new Date()});
+      closeModal('authModal'); showToast('تم إنشاء حسابك بنجاح! 🎉');
+    } catch(e) {
+      showToast(e.code==='auth/email-already-in-use'?'هذا البريد مستخدم مسبقاً':'حدث خطأ، حاول مرة أخرى','error');
+    }
+    btn.disabled=false; btn.textContent='إنشاء حساب';
+  };
+
+  onAuthStateChanged(auth, user => {
+    currentUser = user;
+    if (user) {
+      document.getElementById('guestButtons').style.display='none';
+      document.getElementById('userBadge').style.display='block';
+      const name=user.displayName||user.email.split('@')[0];
+      document.getElementById('userName').textContent=name;
+      document.getElementById('userInitial').textContent=name.charAt(0).toUpperCase();
+    } else {
+      document.getElementById('guestButtons').style.display='flex';
+      document.getElementById('userBadge').style.display='none';
+    }
+  });
+
+  window.previewImgs = e => {
+    selectedImgs=Array.from(e.target.files).slice(0,5);
+    const container=document.getElementById('imgPreviews'); container.innerHTML='';
+    selectedImgs.forEach((f,i)=>{
+      const reader=new FileReader();
+      reader.onload=ev=>{
+        const div=document.createElement('div'); div.className='img-preview-item';
+        div.innerHTML=`<img src="${ev.target.result}"><button onclick="removeImg(${i})">✕</button>`;
+        container.appendChild(div);
+      };
+      reader.readAsDataURL(f);
+    });
+  };
+  window.removeImg = i => { selectedImgs.splice(i,1); };
+
+  window.submitAd = async () => {
+    if (!currentUser) return showToast('سجل دخول أولاً','error');
+    const title=document.getElementById('adTitle').value.trim();
+    const cat=document.getElementById('adCat').value;
+    const type=document.getElementById('adType').value;
+    const price=document.getElementById('adPrice').value;
+    const wilaya=document.getElementById('adWilaya').value;
+    const desc=document.getElementById('adDesc').value.trim();
+    const phone=document.getElementById('adPhone').value.trim();
+    if (!title||!cat||!type||!wilaya||!desc||!phone) return showToast('أكمل الحقول المطلوبة (*)','error');
+    const btn=document.getElementById('submitBtn');
+    btn.disabled=true; btn.textContent='⏳ جاري النشر...';
+    try {
+      let imgUrls=[];
+      for (const img of selectedImgs) {
+        try {
+          const fd=new FormData(); fd.append('image',img);
+          const res=await fetch('https://api.imgur.com/3/image',{method:'POST',headers:{'Authorization':'Client-ID '+IMGUR_CLIENT_ID},body:fd});
+          const data=await res.json();
+          if(data.success) imgUrls.push(data.data.link);
+        } catch(ie){}
+      }
+      await addDoc(collection(db,'ads'),{
+        title,cat,type,price:price||'قابل للتفاوض',wilaya,desc,phone,
+        images:imgUrls,userId:currentUser.uid,
+        userName:currentUser.displayName||'مستخدم',
+        createdAt:new Date(),views:0,avgRating:0,ratingCount:0
+      });
+      closeModal('postModal'); showToast('✅ تم نشر إعلانك بنجاح!');
+      ['adTitle','adPrice','adDesc','adPhone'].forEach(id=>document.getElementById(id).value='');
+      ['adCat','adType','adWilaya'].forEach(id=>document.getElementById(id).value='');
+      document.getElementById('imgPreviews').innerHTML='';
+      selectedImgs=[];
+      loadAds();
+    } catch(e){ showToast('حدث خطأ أثناء النشر','error'); }
+    btn.disabled=false; btn.textContent='🚀 نشر الإعلان';
+  };
+
+  const loadAds = async () => {
+    try {
+      const snap=await getDocs(query(collection(db,'ads'),orderBy('createdAt','desc'),limit(300)));
+      allAds=snap.docs.map(d=>({id:d.id,...d.data()}));
+      updateCounts(); updateStats();
+      if(document.getElementById('categoryPage').classList.contains('active')) renderCategoryAds();
+    } catch(e){ console.error(e); }
+  };
+
+  const updateCounts = () => {
+    ['دجاج حي','فروج','دجاج مذبوح','ديك رومي','بط','إوز','حمام','طيور زينة','بيض','أعلاف ومركزات','أدوية وتطعيم','معدات ومستلزمات'].forEach(c=>{
+      const el=document.getElementById('cnt-'+c);
+      if(el) el.textContent=allAds.filter(a=>a.cat===c).length+' إعلان';
+    });
+  };
+
+  const updateStats = async () => {
+    document.getElementById('statAds').textContent=allAds.length+'+';
+    try {
+      const s=await getDocs(collection(db,'users'));
+      document.getElementById('statUsers').textContent=(s.size||1)+'+';
+    } catch(e){ document.getElementById('statUsers').textContent='1+'; }
+  };
+
+  const catIcons={'دجاج حي':'🐓','فروج':'🐤','دجاج مذبوح':'🍗','ديك رومي':'🦃','بط':'🦆','إوز':'🪿','حمام':'🕊️','طيور زينة':'🦜','بيض':'🥚','بيض بلدي':'🥚','أعلاف ومركزات':'🌾','أدوية وتطعيم':'💉','معدات ومستلزمات':'🏗️','أرانب':'🐇','نعام':'🦤'};
+  const typeClass={'للبيع':'type-sell','للإيجار':'type-rent','مطلوب':'type-wanted','مجاني':'type-free'};
+
+  const timeAgo = d => {
+    if(!d) return '';
+    const sec=Math.floor((new Date()-(d.toDate?d.toDate():new Date(d)))/1000);
+    if(sec<60) return 'الآن';
+    if(sec<3600) return Math.floor(sec/60)+' دقيقة';
+    if(sec<86400) return Math.floor(sec/3600)+' ساعة';
+    return Math.floor(sec/86400)+' يوم';
+  };
+
+  const starsHtml = (avg,count) => {
+    const full=Math.round(avg||0); let s='';
+    for(let i=1;i<=5;i++) s+=`<span class="star-sm ${i<=full?'':'empty'}">★</span>`;
+    return `<div class="rating-display">${s}<span style="font-size:10px;color:var(--text-muted);margin-right:4px">(${count||0})</span></div>`;
+  };
+
+  const adCardHtml = (ad,i) => `
+    <div class="ad-card" style="animation-delay:${i*0.05}s" onclick="openDetail('${ad.id}')">
+      <div class="ad-img">
+        ${ad.images&&ad.images[0]?`<img src="${ad.images[0]}" loading="lazy" alt="${ad.title}">`:(catIcons[ad.cat]||'🐔')}
+        ${ad.avgRating>0?`<div class="ad-rating-badge">⭐ ${Number(ad.avgRating).toFixed(1)}</div>`:''}
+      </div>
+      <div class="ad-body">
+        <span class="ad-type ${typeClass[ad.type]||'type-sell'}">${ad.type}</span>
+        <div class="ad-title">${ad.title}</div>
+        <div class="ad-price">${ad.price==='قابل للتفاوض'?'قابل للتفاوض':Number(ad.price).toLocaleString()+' دج'}</div>
+        ${starsHtml(ad.avgRating,ad.ratingCount)}
+        <div class="ad-meta" style="margin-top:6px"><span>📍 ${ad.wilaya}</span><span>🕐 ${timeAgo(ad.createdAt)}</span></div>
+      </div>
+    </div>`;
+
+  const renderCategoryAds = () => {
+    let ads=allAds.filter(a=>a.cat===currentCat);
+    if(currentType!=='all') ads=ads.filter(a=>a.type===currentType);
+    const grid=document.getElementById('adsGrid');
+    if(!ads.length){
+      grid.innerHTML=`<div class="empty-state"><div class="icon">📭</div><h3>لا توجد إعلانات في ${currentCat}</h3><p>كن أول من ينشر في هذه الفئة!</p><button class="btn btn-primary" onclick="requireAuth()" style="margin-top:12px">+ أضف إعلان</button></div>`;
+      document.getElementById('loadMoreBtn').style.display='none'; return;
+    }
+    grid.innerHTML=ads.slice(0,displayCount).map((ad,i)=>adCardHtml(ad,i)).join('');
+    document.getElementById('loadMoreBtn').style.display=ads.length>displayCount?'inline-block':'none';
+  };
+
+  window.loadMore = () => { displayCount+=PAGE_SIZE; renderCategoryAds(); };
+
+  window.filterType = (type,el) => {
+    currentType=type; displayCount=PAGE_SIZE;
+    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+    el.classList.add('active'); renderCategoryAds();
+  };
+
+  window.doSearch = () => {
+    const q=document.getElementById('searchInput').value.trim();
+    if(!q) return;
+    const results=allAds.filter(a=>a.title.includes(q)||a.desc.includes(q)||a.wilaya.includes(q)||a.cat.includes(q));
+    showPage('searchPage');
+    const grid=document.getElementById('searchGrid');
+    grid.innerHTML=results.length
+      ? results.map((ad,i)=>adCardHtml(ad,i)).join('')
+      : `<div class="empty-state"><div class="icon">🔍</div><h3>لا نتائج لـ "${q}"</h3><p>جرب كلمة بحث أخرى</p></div>`;
+  };
+
+  window.openDetail = async id => {
+    const ad=allAds.find(a=>a.id===id);
+    if(!ad) return;
+    currentRating=0;
+    document.getElementById('detailContent').innerHTML=`
+      <div class="ad-detail-img-main">${ad.images&&ad.images[0]?`<img src="${ad.images[0]}" alt="${ad.title}">`:(catIcons[ad.cat]||'🐔')}</div>
+      ${ad.images&&ad.images.length>1?`<div style="display:grid;grid-template-columns:repeat(${Math.min(ad.images.length-1,3)},1fr);gap:6px;margin-bottom:12px">${ad.images.slice(1).map(u=>`<div style="height:70px;border-radius:8px;overflow:hidden"><img src="${u}" style="width:100%;height:100%;object-fit:cover"></div>`).join('')}</div>`:''}
+      <span class="ad-type ${typeClass[ad.type]||'type-sell'}" style="margin-bottom:10px;display:inline-block">${ad.type}</span>
+      <h3 style="font-size:18px;font-weight:800;margin-bottom:8px">${ad.title}</h3>
+      <div style="font-size:22px;font-weight:900;color:var(--orange);margin-bottom:12px">${ad.price==='قابل للتفاوض'?'قابل للتفاوض':Number(ad.price).toLocaleString()+' دج'}</div>
+      <div class="detail-info">
+        <div class="detail-row"><span class="label">الفئة</span><span class="value">${catIcons[ad.cat]||'🐔'} ${ad.cat}</span></div>
+        <div class="detail-row"><span class="label">الولاية</span><span class="value">📍 ${ad.wilaya}</span></div>
+        <div class="detail-row"><span class="label">البائع</span><span class="value">👤 ${ad.userName}</span></div>
+        <div class="detail-row"><span class="label">التاريخ</span><span class="value">🕐 ${timeAgo(ad.createdAt)}</span></div>
+        <div class="detail-row"><span class="label">المشاهدات</span><span class="value">👁️ ${(ad.views||0)+1}</span></div>
+        <div class="detail-row"><span class="label">التقييم</span><span class="value">${starsHtml(ad.avgRating,ad.ratingCount)}</span></div>
+      </div>
+      <div style="font-size:13px;color:var(--text-muted);line-height:1.8;margin-bottom:14px">${ad.desc}</div>
+      <button class="contact-btn" onclick="window.open('https://wa.me/213${ad.phone.replace(/^0/,'')}?text=السلام عليكم، رأيت إعلانك على سوق الدواجن DZ: ${encodeURIComponent(ad.title)}','_blank')">
+        <span>📱</span> تواصل عبر واتساب - ${ad.phone}
+      </button>
+      <a href="tel:${ad.phone}" style="display:block;text-align:center;padding:12px;border:1px solid var(--border);border-radius:12px;color:var(--text);text-decoration:none;font-weight:700;font-size:14px;margin-top:8px">
+        📞 اتصال مباشر: ${ad.phone}
+      </a>
+      <div style="margin-top:20px;background:var(--dark3);border-radius:12px;padding:14px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px">⭐ قيّم هذا الإعلان</div>
+        ${currentUser?`
+          <div class="stars-row" id="starRow">
+            <span class="star" onclick="setRating(1,'${id}')" onmouseover="hoverRating(1)" onmouseout="resetHover()">★</span>
+            <span class="star" onclick="setRating(2,'${id}')" onmouseover="hoverRating(2)" onmouseout="resetHover()">★</span>
+            <span class="star" onclick="setRating(3,'${id}')" onmouseover="hoverRating(3)" onmouseout="resetHover()">★</span>
+            <span class="star" onclick="setRating(4,'${id}')" onmouseover="hoverRating(4)" onmouseout="resetHover()">★</span>
+            <span class="star" onclick="setRating(5,'${id}')" onmouseover="hoverRating(5)" onmouseout="resetHover()">★</span>
+          </div>
+          <div id="ratingStatus" style="font-size:11px;color:var(--text-muted);margin-top:6px">اختر عدد النجوم للتقييم</div>
+        `:`<div style="font-size:12px;color:var(--text-muted)">سجل دخول لتقييم الإعلان</div>`}
+      </div>
+      <div class="comments-section">
+        <h4>💬 التعليقات</h4>
+        <div id="commentsList"><div class="comments-loading">جاري تحميل التعليقات...</div></div>
+        ${currentUser?`
+          <div class="add-comment-box">
+            <div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:6px">أضف تعليقاً</div>
+            <div class="comment-input-row">
+              <input type="text" id="commentInput" placeholder="اكتب تعليقك هنا...">
+              <button onclick="submitComment('${id}')">إرسال</button>
+            </div>
+          </div>
+        `:`<div style="font-size:12px;color:var(--text-muted);margin-top:8px;text-align:center">سجل دخول للتعليق على الإعلان</div>`}
+      </div>`;
+    openModal('detailModal');
+    try { await updateDoc(doc(db,'ads',id),{views:increment(1)}); } catch(e){}
+    loadComments(id);
+  };
+
+  window.hoverRating = n => {
+    document.querySelectorAll('#starRow .star').forEach((s,i) => { s.style.color=i<n?'var(--gold)':'#444'; });
+  };
+  window.resetHover = () => {
+    document.querySelectorAll('#starRow .star').forEach((s,i) => { s.style.color=i<currentRating?'var(--gold)':'#444'; });
+  };
+
+  window.setRating = async (n,adId) => {
+    if(!currentUser) return showToast('سجل دخول أولاً','error');
+    currentRating=n;
+    resetHover();
+    document.getElementById('ratingStatus').textContent='⏳ جاري حفظ تقييمك...';
+    try {
+      const allRatingsSnap=await getDocs(query(collection(db,'ratings'),where('adId','==',adId)));
+      const allRatingDocs=allRatingsSnap.docs;
+      const existingDoc=allRatingDocs.find(d=>d.data().userId===currentUser.uid);
+      if(existingDoc) {
+        await updateDoc(doc(db,'ratings',existingDoc.id),{rating:n,updatedAt:new Date()});
+      } else {
+        await addDoc(collection(db,'ratings'),{adId,userId:currentUser.uid,rating:n,createdAt:new Date()});
+      }
+      const updatedRatings=allRatingDocs.filter(d=>d.data().userId!==currentUser.uid).map(d=>d.data().rating);
+      updatedRatings.push(n);
+      const avg=updatedRatings.reduce((a,b)=>a+b,0)/updatedRatings.length;
+      await updateDoc(doc(db,'ads',adId),{avgRating:avg,ratingCount:updatedRatings.length});
+      const localAd=allAds.find(a=>a.id===adId);
+      if(localAd){localAd.avgRating=avg;localAd.ratingCount=updatedRatings.length;}
+      document.getElementById('ratingStatus').textContent=`✅ تم تقييمك بـ ${n} نجمة`;
+      showToast(`شكراً! قيّمت بـ ${n} نجوم ⭐`);
+    } catch(e){ document.getElementById('ratingStatus').textContent='حدث خطأ، حاول مرة أخرى'; console.error(e); }
+  };
+
+  const loadComments = async adId => {
+    const list=document.getElementById('commentsList');
+    if(!list) return;
+    try {
+      const snap=await getDocs(query(collection(db,'comments'),where('adId','==',adId),limit(50)));
+      if(snap.empty){ list.innerHTML='<div class="no-comments">لا توجد تعليقات بعد، كن أول من يعلق!</div>'; return; }
+      const comments=snap.docs.map(d=>({id:d.id,...d.data()}));
+      comments.sort((a,b)=>{
+        const ta=a.createdAt?.toDate?a.createdAt.toDate():new Date(a.createdAt||0);
+        const tb=b.createdAt?.toDate?b.createdAt.toDate():new Date(b.createdAt||0);
+        return tb-ta;
+      });
+      list.innerHTML=comments.map(c=>`
+        <div class="comment-item">
+          <div class="comment-header">
+            <span class="comment-author">👤 ${c.userName}</span>
+            <span class="comment-time">${timeAgo(c.createdAt)}</span>
+          </div>
+          ${c.rating?`<div class="comment-stars">${'★'.repeat(c.rating)}<span style="color:#444">${'★'.repeat(5-c.rating)}</span></div>`:''}
+          <div class="comment-text">${c.text}</div>
+        </div>`).join('');
+    } catch(e){ list.innerHTML='<div class="no-comments">تعذر تحميل التعليقات</div>'; console.error(e); }
+  };
+
+  window.submitComment = async adId => {
+    if(!currentUser) return showToast('سجل دخول أولاً','error');
+    const input=document.getElementById('commentInput');
+    const text=input.value.trim();
+    if(!text||text.length<3) return showToast('اكتب تعليقاً أولاً','error');
+    input.disabled=true;
+    try {
+      await addDoc(collection(db,'comments'),{
+        adId,text,userId:currentUser.uid,
+        userName:currentUser.displayName||'مستخدم',
+        rating:currentRating||0,createdAt:new Date()
+      });
+      input.value='';
+      showToast('✅ تم إضافة تعليقك!');
+      loadComments(adId);
+    } catch(e){ showToast('حدث خطأ','error'); }
+    input.disabled=false;
+  };
+
+  window.openMyAds = async () => {
+    if(!currentUser) return;
+    openModal('myAdsModal');
+    const list=document.getElementById('myAdsList');
+    list.innerHTML='<div class="loading"><div class="spinner"></div></div>';
+    const myAds=allAds.filter(a=>a.userId===currentUser.uid);
+    if(!myAds.length){ list.innerHTML='<div class="empty-state"><div class="icon">📭</div><h3>لا توجد إعلانات</h3><p>انشر أول إعلان لك!</p></div>'; return; }
+    list.innerHTML=myAds.map(ad=>`
+      <div class="my-ad-item">
+        <div class="my-ad-thumb">${ad.images&&ad.images[0]?`<img src="${ad.images[0]}" alt="">`:(catIcons[ad.cat]||'🐔')}</div>
+        <div class="my-ad-info">
+          <div class="my-ad-title">${ad.title}</div>
+          <div class="my-ad-price">${ad.price==='قابل للتفاوض'?'قابل للتفاوض':Number(ad.price).toLocaleString()+' دج'}</div>
+          <div style="font-size:10px;color:var(--text-muted)">📍 ${ad.wilaya} • 👁️ ${ad.views||0} • ⭐ ${(ad.avgRating||0).toFixed(1)} (${ad.ratingCount||0})</div>
+        </div>
+        <div><button class="btn-delete" onclick="deleteMyAd('${ad.id}',this)">حذف</button></div>
+      </div>`).join('');
+  };
+
+  window.deleteMyAd = async (id,btn) => {
+    if(!confirm('هل أنت متأكد من حذف هذا الإعلان؟')) return;
+    btn.textContent='...';
+    try {
+      await deleteDoc(doc(db,'ads',id));
+      allAds=allAds.filter(a=>a.id!==id);
+      updateCounts(); openMyAds(); showToast('تم حذف الإعلان');
+    } catch(e){ showToast('حدث خطأ','error'); }
+  };
+
+  loadAds();
+</script>
+</body>
+          </html>
